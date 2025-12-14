@@ -1,0 +1,7 @@
+-r base.in
+-r data-core.in
+-r compat-pandas.in
+-r api.in
+-r etl.in
+-r quality.in
+-r viz.in

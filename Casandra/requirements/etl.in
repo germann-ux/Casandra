@@ -1,0 +1,11 @@
+# Archivos y formatos
+openpyxl>=3.1,<4.0    # Excel
+python-multipart>=0.0.9
+
+# Reintentos y robustez de red
+tenacity>=8.2,<9.0
+
+# Compresión / hashing rápido (para auditoría y depósitos)
+zstandard>=0.22,<0.23
+blake3>=0.4,<0.5
+xxhash>=3.4,<3.5

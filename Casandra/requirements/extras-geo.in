@@ -1,0 +1,6 @@
+shapely>=2.0,<3.0
+pyproj>=3.6,<4.0
+rtree>=1.2,<1.3           # requiere libspatialindex en el SO
+# Nota: DuckDB tiene la extensión SPATIAL (instálala en runtime: INSTALL spatial; LOAD spatial;)
+# Geopandas es pesado en Windows; evalúa solo si de verdad lo necesitas:
+# geopandas>=1.0,<1.2

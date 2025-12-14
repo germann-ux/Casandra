@@ -1,0 +1,2 @@
+{"job_id": "50e9590b7a85481f86e1cfaf00f7913c", "when_ms": 1756099654826, "stage": "request_in", "payload": {"path": "/docs", "method": "GET"}}
+{"job_id": "50e9590b7a85481f86e1cfaf00f7913c", "when_ms": 1756099654828, "stage": "response_out", "payload": {"status_code": 200}}

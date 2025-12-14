@@ -1,0 +1,7 @@
+-r prod.txt
+-r docs.in
+-r dev.in
+
+# Si vas a trabajar con mapas/análisis temporal en esta etapa:
+# -r extras-geo.in
+-r extras-timeseries.in

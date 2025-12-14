@@ -1,0 +1,4 @@
+{"job_id": "9fe26a7b7303408abbf339cf708c2281", "when_ms": 1756100405502, "stage": "request_in", "payload": {"path": "/demo/rank", "method": "GET"}}
+{"job_id": "9fe26a7b7303408abbf339cf708c2281", "when_ms": 1756100405505, "stage": "tool_start", "payload": {"tool": "demo_rank@1.0.0", "args": {"entidad_id": "GTO.MUN.LEON", "from_": "2025-07-01", "to_": "2025-08-20", "strict_time": true}}}
+{"job_id": "9fe26a7b7303408abbf339cf708c2281", "when_ms": 1756100405506, "stage": "tool_error", "payload": {"tool": "demo_rank@1.0.0", "error": "RangoFueraDeCorte", "details": "Rango fuera del watermark temporal del dataset", "timing_ms": 0}}
+{"job_id": "9fe26a7b7303408abbf339cf708c2281", "when_ms": 1756100405508, "stage": "response_out", "payload": {"status_code": 422}}

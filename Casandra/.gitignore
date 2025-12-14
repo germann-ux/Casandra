@@ -1,0 +1,30 @@
+# Entorno Python
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Archivos temporales
+*.log
+*.sqlite3
+*.db
+
+# Configuración local
+.env
+.env.*
+
+# Herramientas
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Documentación
+docs/_build/

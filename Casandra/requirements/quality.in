@@ -1,0 +1,5 @@
+# Validación declarativa de dataframes (soporta Polars)
+pandera[polars]>=0.20,<1.0
+
+# (opcional) Data quality framework clásico – pesado; útil si luego haces suites ricas
+# great-expectations>=0.18,<0.19

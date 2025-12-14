@@ -1,0 +1,9 @@
+statsmodels>=0.14,<0.15   # STL, ARIMA, etc.
+scikit-learn>=1.4,<2.0    # clustering/anomalías clásicas
+
+
+# PyOD para métodos de outlier avanzados:
+pyod>=2.0,<3.0
+
+# prophet es pesado y con dependencias de C++; evitar salvo necesidad:
+# prophet>=1.1,<1.2
