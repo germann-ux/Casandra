@@ -334,7 +334,214 @@ to:   2025-08-13
 8) Auditoría → job_id, query_hash, rangos efectivos
 9) Mensajero devuelve respuesta
 ```
+---
+## Anexo C — Arquitectura de Tools Verificables y Catálogo Versionado (v0.1)
 
+Este anexo formaliza el modelo de herramientas de Casandra como contratos verificables de primera clase.
+Define cómo se describen, versionan, validan y componen las Tools, así como el funcionamiento del catálogo
+versionado utilizado por el Orquestador y el Celador antes de cualquier ejecución.
+
+Este anexo complementa el Documento Unificado de Arquitectura e Integración v0 y establece las bases
+para la evolución hacia v1 sin romper compatibilidad.
+
+**Propósito**: formalizar las herramientas (Tools) como contratos verificables de primera clase, habilitando validación automática de planes, reproducibilidad fuerte y evolución controlada del sistema sin romper compatibilidad.
+
+Este anexo complementa el documento unificado de arquitectura de Casandra v0 y define las bases para la transición hacia v1.
+
+---
+
+## C.1 Motivación de diseño
+
+Casandra opera bajo el principio de **razonamiento delegado**:  
+el LLM propone planes, pero no accede directamente a los datos ni decide los límites operativos.  
+Estas decisiones se imponen mediante contratos, validaciones y catálogos versionados.
+
+Para sostener este principio a escala, las herramientas dejan de ser simples funciones y se convierten en **artefactos contractuales verificables**.
+
+Los objetivos de este diseño son:
+
+- Detectar errores antes de ejecutar cómputos costosos.
+- Garantizar reproducibilidad y auditabilidad de resultados.
+- Permitir evolución del sistema sin romper planes existentes.
+- Proveer reglas claras y explícitas tanto para humanos como para agentes LLM.
+
+---
+
+## C.2 ToolSpec — Esquema base de Tool
+
+Toda herramienta en Casandra se define mediante un **ToolSpec**, un contrato formal que describe su identidad, entrada, salida y restricciones.
+
+### C.2.1 Estructura general
+
+Cada ToolSpec incluye:
+
+- Identidad de la herramienta.
+- Declaración explícita de dependencias.
+- Esquema estricto de argumentos.
+- Contrato de salida sobre el Sobre (Envelope).
+- Declaración de determinismo.
+
+---
+
+## C.3 Identidad de la herramienta
+
+Cada ToolSpec debe definir:
+
+- **tool_id**  
+  Identificador numérico interno y estable.
+
+- **name**  
+  Nombre canónico de la herramienta (ej. `rank_por_delito`).
+
+- **version**  
+  Versión semántica (semver).
+
+- **summary**  
+  Descripción breve y precisa del propósito de la herramienta.
+
+- **kind**  
+  Categoría funcional (`filter`, `analysis`, `metricas`, `patrones`, etc.).
+
+La identidad completa de una herramienta está dada por `name@version`.
+
+---
+
+## C.4 Requisitos declarativos (`requires`)
+
+Cada herramienta declara explícitamente sus dependencias lógicas:
+
+- **dataset**: requiere acceso al Depósito.
+- **entity**: requiere `entidad_id`.
+- **date_range**: requiere `from` y `to`.
+- **evidence_capable**: puede generar evidencia trazable.
+
+Estos requisitos permiten:
+
+- Validar el orden lógico del pipeline.
+- Detectar planes inválidos antes de ejecución.
+- Automatizar reglas de composición entre herramientas.
+
+---
+
+## C.5 Esquema de argumentos (`args_schema`)
+
+Cada ToolSpec define un esquema estricto de entrada, basado en JSON Schema.
+
+Principios del esquema:
+
+- Tipos explícitos.
+- Campos obligatorios declarados.
+- Enumeraciones cerradas cuando aplica.
+- Rangos numéricos definidos.
+- `additionalProperties` deshabilitado por defecto.
+
+Esto elimina ambigüedad semántica y reduce errores del LLM a fallos estructurales corregibles.
+
+---
+
+## C.6 Contrato de salida (`output_contract`)
+
+El contrato de salida define qué bloques del Sobre garantiza la herramienta.
+
+Se declaran explícitamente:
+
+- Versión del esquema del Sobre soportado.
+- Presencia garantizada de `summary`, `data.inline`, etc.
+- Bloques opcionales (`artifacts`, `evidence`).
+- Límites de filas por defecto.
+
+Ninguna herramienta puede violar el esquema del Sobre definido por la arquitectura central.
+
+---
+
+## C.7 Determinismo
+
+Cada herramienta declara su nivel de determinismo.
+
+Una herramienta es determinista si, dados:
+
+- el mismo `dataset_version`
+- los mismos argumentos normalizados
+
+produce siempre el mismo resultado.
+
+Esta declaración habilita reproducibilidad, auditoría y comparación entre ejecuciones.
+
+---
+
+## C.8 Validación automática de planes
+
+Antes de ejecutar cualquier pipeline, Casandra realiza validación automática en dos fases.
+
+### C.8.1 Validación estática
+
+No accede a datos.
+
+Incluye:
+
+- Verificación de existencia de tool y versión.
+- Validación de argumentos contra `args_schema`.
+- Compatibilidad con `catalog_version`.
+- Orden lógico del pipeline según `requires`.
+- Normalización canónica del plan para cálculo de `query_hash`.
+
+---
+
+### C.8.2 Validación contextual
+
+Accede únicamente a metadata.
+
+Incluye:
+
+- Resolución de fechas contra `min_date` y `max_date`.
+- Aplicación de reglas de `strict_time`.
+- Validación de entidades y taxonomías.
+- Estimación básica de consumo de recursos.
+
+Si cualquier validación falla, se retorna un **Sobre de error** y el pipeline no se ejecuta.
+
+---
+
+## C.9 Catálogo Versionado Verificable (CatalogSpec)
+
+El catálogo de herramientas es un artefacto inmutable y versionado.
+
+Contiene:
+
+- `catalog_version`
+- versión del esquema
+- timestamp de generación
+- checksum criptográfico
+- lista completa de ToolSpec
+- catálogos de entidades y taxonomías asociadas
+
+Cualquier modificación genera un nuevo catálogo con checksum distinto.
+
+---
+
+## C.10 Reglas de versionado y compatibilidad
+
+Casandra adopta versionado semántico estricto:
+
+- **PATCH**: correcciones internas sin cambios contractuales.
+- **MINOR**: extensión compatible (campos opcionales).
+- **MAJOR**: cambios incompatibles.
+
+Las versiones activas no se eliminan sin transición explícita.
+
+---
+
+## C.11 Beneficios arquitectónicos
+
+Este diseño aporta:
+
+- Validación determinista del razonamiento.
+- Errores tempranos, explícitos y auditables.
+- Evolución segura del sistema.
+- Base sólida para control de acceso, rate limiting y seguridad en v1.
+
+Casandra no confía en que el LLM razone bien.  
+Casandra **verifica** que razone dentro de lo permitido.
 
 ---
 
@@ -366,3 +573,4 @@ Ejemplo de bloque extendido del Sobre (extracto):
   "gravedad_promedio": 0.62
 }
 ```
+
