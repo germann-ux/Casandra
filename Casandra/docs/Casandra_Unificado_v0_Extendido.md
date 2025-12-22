@@ -573,4 +573,3 @@ Ejemplo de bloque extendido del Sobre (extracto):
   "gravedad_promedio": 0.62
 }
 ```
-
