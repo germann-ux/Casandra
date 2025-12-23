@@ -4,7 +4,7 @@ import os
 import sys
 
 # Añade la raíz del proyecto a sys.path para que autodoc encuentre tus módulos
-sys.path.insert(0, os.path.abspath("../.."))
+sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 project = "Casandra"
