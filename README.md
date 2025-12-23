@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="casandra/docs/_static/CasandraLogo.png" alt="Casandra Logo" width="200"/>
+  <img src="docs/_static/CasandraLogo.png" alt="Casandra Logo" width="200"/>
   <h1><em><strong>Casandra</strong></em></h1>
   <h3><i>Los datos hablan por sí solos</i></h3>
-
+  
   [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
   [![Status](https://img.shields.io/badge/Status-En_Desarrollo-orange)]()
   [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
