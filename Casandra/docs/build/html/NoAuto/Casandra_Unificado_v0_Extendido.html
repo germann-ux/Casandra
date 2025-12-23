@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Casandra v0 — Documento Unificado de Arquitectura e Integración &mdash; Casandra 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=01f34227"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="casandra.Main module" href="../api/casandra.Main.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Casandra
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">casandra</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Casandra v0 — Documento Unificado de Arquitectura e Integración</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#proposito-y-alcance-v0">1) Propósito y Alcance (v0)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#terminologia">2) Terminología</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#vista-de-dominios-y-responsabilidades">3) Vista de dominios y responsabilidades</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#integracion-externa-api">4) Integración externa (API)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#endpoints">4.1 Endpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#catalogo-de-tools-resumen">4.2 Catálogo de Tools (resumen)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#plan-entrada-a-plan-execute">4.3 Plan (entrada a <code class="docutils literal notranslate"><span class="pre">/plan/execute</span></code>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sobre-envelope-salida-estandar-de-tools">4.4 Sobre (Envelope) — salida estándar de tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#job-api-compat-contratos-y-adapter">4.5 Job API (compat) — contratos y <em>adapter</em></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#reglas-temporales-anclaje-y-recorte">5) Reglas temporales (anclaje y recorte)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#errores-y-validaciones">6) Errores y validaciones</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#observabilidad-auditoria-y-salud">7) Observabilidad, auditoría y salud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conformidad-de-nombres-y-convenciones">8) Conformidad de nombres y convenciones</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#datos-y-deposito">9) Datos y Depósito</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pruebas-y-despliegue">10) Pruebas y despliegue</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seguridad-v0-v1">11) Seguridad (v0 → v1)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#anexo-a-ejemplos-de-pipelines-informativos">Anexo A — Ejemplos de pipelines (informativos)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#anexo-b-secuencia-tipica-consulta-analitica">Anexo B — Secuencia típica (consulta/analítica)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#anexo-c-arquitectura-de-tools-verificables-y-catalogo-versionado-v0-1">Anexo C — Arquitectura de Tools Verificables y Catálogo Versionado (v0.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-1-motivacion-de-diseno">C.1 Motivación de diseño</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-2-toolspec-esquema-base-de-tool">C.2 ToolSpec — Esquema base de Tool</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#c-2-1-estructura-general">C.2.1 Estructura general</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#c-3-identidad-de-la-herramienta">C.3 Identidad de la herramienta</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-4-requisitos-declarativos-requires">C.4 Requisitos declarativos (<code class="docutils literal notranslate"><span class="pre">requires</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-5-esquema-de-argumentos-args-schema">C.5 Esquema de argumentos (<code class="docutils literal notranslate"><span class="pre">args_schema</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-6-contrato-de-salida-output-contract">C.6 Contrato de salida (<code class="docutils literal notranslate"><span class="pre">output_contract</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-7-determinismo">C.7 Determinismo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-8-validacion-automatica-de-planes">C.8 Validación automática de planes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#c-8-1-validacion-estatica">C.8.1 Validación estática</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c-8-2-validacion-contextual">C.8.2 Validación contextual</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#c-9-catalogo-versionado-verificable-catalogspec">C.9 Catálogo Versionado Verificable (CatalogSpec)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-10-reglas-de-versionado-y-compatibilidad">C.10 Reglas de versionado y compatibilidad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-11-beneficios-arquitectonicos">C.11 Beneficios arquitectónicos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#limitaciones-de-v0-y-extensiones-propuestas-hacia-v1">13) Limitaciones de v0 y Extensiones Propuestas (hacia v1)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#nuevos-tools-requeridos">13.1 Nuevos Tools requeridos</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#extension-de-schemas-de-incidentes-y-sobre">13.2 Extensión de schemas de incidentes y Sobre</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reduccion-y-agregacion">13.3 Reducción y agregación</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contratos-de-salida-enriquecidos">13.4 Contratos de salida enriquecidos</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Casandra</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Casandra v0 — Documento Unificado de Arquitectura e Integración</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/NoAuto/Casandra_Unificado_v0_Extendido.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="casandra-v0-documento-unificado-de-arquitectura-e-integracion">
+<h1>Casandra v0 — Documento Unificado de Arquitectura e Integración<a class="headerlink" href="#casandra-v0-documento-unificado-de-arquitectura-e-integracion" title="Link to this heading"></a></h1>
+<blockquote>
+<div><p><strong>Objetivo</strong>: unificar la <strong>arquitectura interna</strong> (componentes, carpetas, responsabilidades) y la <strong>integración externa</strong> (contratos, endpoints, sobres, reglas temporales y errores) sin incoherencias. Este documento es la referencia única de v0.</p>
+</div></blockquote>
+<hr class="docutils" />
+<section id="proposito-y-alcance-v0">
+<h2>1) Propósito y Alcance (v0)<a class="headerlink" href="#proposito-y-alcance-v0" title="Link to this heading"></a></h2>
+<p>Casandra es un sistema de <strong>análisis criminal</strong> para Guanajuato. Ingiere, cura, almacena y analiza datos públicos; expone resultados claros, trazables y <strong>auditables</strong> a un LLM mediante contratos estables.</p>
+<p><strong>Alcance v0</strong>:</p>
+<ul class="simple">
+<li><p>ETL mínimo: CSV/ZIP → curado → Parquet/DuckDB.</p></li>
+<li><p>Consultor (solo lectura) al Depósito.</p></li>
+<li><p>Orquestador que valida/ejecuta pipelines de herramientas.</p></li>
+<li><p>Celador para validaciones, auditoría y manejo de errores.</p></li>
+<li><p>Expositor (API) con <strong>dos modos</strong>: <em>Plan API</em> (LLM-facing) y <em>Job API</em> (compatibilidad simple).</p></li>
+<li><p>Catálogo de herramientas versionadas (semver).</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="terminologia">
+<h2>2) Terminología<a class="headerlink" href="#terminologia" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>LLM</strong>: agente que razona a alto nivel y arma un <strong>plan</strong> de herramientas.</p></li>
+<li><p><strong>Intérprete</strong>: valida y ejecuta el plan paso a paso (service bus lógico).</p></li>
+<li><p><strong>Tool</strong>: unidad atómica especializada (e.g., <code class="docutils literal notranslate"><span class="pre">rank_por_delito</span></code>).</p></li>
+<li><p><strong>Envelope / Sobre</strong>: formato uniforme de salida de cada tool (éxito o error).</p></li>
+<li><p><strong>Dataset watermark</strong>: <code class="docutils literal notranslate"><span class="pre">min_date</span></code>, <code class="docutils literal notranslate"><span class="pre">max_date</span></code> y <code class="docutils literal notranslate"><span class="pre">dataset_version</span></code> (anclaje temporal).</p></li>
+<li><p><strong>Depósito</strong>: Parquet/DuckDB de solo lectura para consultas del Consultor.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="vista-de-dominios-y-responsabilidades">
+<h2>3) Vista de dominios y responsabilidades<a class="headerlink" href="#vista-de-dominios-y-responsabilidades" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>LLM ⇄ Expositor → Orquestador → (Herramientas / Análisis / Consultor) → Empaquetador → Mensajero → LLM
+                   │
+                   └──────────────► Celador (validaciones, auditoría, errores)
+
+ETL: Cargador → Curador → Depósito
+Transversal: Auxiliares (config, reloj, log, utilidades)
+</pre></div>
+</div>
+<p><strong>Componentes</strong> (resumen):</p>
+<ul class="simple">
+<li><p><strong>Expositor</strong>: API pública. Traduce HTTP a modelos internos. No contiene lógica de negocio.</p></li>
+<li><p><strong>Orquestador</strong>: ejecuta pipelines de tools; delega a Consultor/Análisis; empaqueta resultados.</p></li>
+<li><p><strong>Consultor</strong>: repositorio de lectura contra Parquet/DuckDB.</p></li>
+<li><p><strong>ETL</strong>: Cargador/Curador/Depósito.</p></li>
+<li><p><strong>Celador</strong>: validaciones, tipología de errores, auditoría (job_id).</p></li>
+<li><p><strong>Auxiliares</strong>: config centralizada, <strong>reloj único</strong>, logging, utilidades.</p></li>
+<li><p><strong>Empaquetador/Mensajero</strong>: presentación (json/markdown/tabular/gráfico) a partir del Sobre.</p></li>
+</ul>
+<p><strong>Estructura de carpetas</strong> (propuesta):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>casandra/
+├── expositor/         # API (FastAPI)
+│   ├── api.py
+│   └── schemas.py
+├── orquestador/
+│   ├── core.py
+│   └── estados.py
+├── consultor/
+│   └── repo.py
+├── etl/
+│   ├── cargador.py
+│   ├── curador.py
+│   └── deposito.py
+├── analisis/
+│   ├── metricas/
+│   │   ├── core.py
+│   │   └── basicas.py
+│   ├── patrones/
+│   │   ├── core.py
+│   │   └── anomalias.py
+│   └── heuristica/
+│       └── reglas.py
+├── herramientas/
+│   └── basicas.py
+├── auxiliares/
+│   ├── config.py
+│   ├── reloj.py
+│   ├── log.py
+│   └── utils.py
+├── celador/
+│   ├── errores.py
+│   ├── validaciones.py
+│   └── auditoria.py
+├── contratos.py
+└── main.py
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="integracion-externa-api">
+<h2>4) Integración externa (API)<a class="headerlink" href="#integracion-externa-api" title="Link to this heading"></a></h2>
+<section id="endpoints">
+<h3>4.1 Endpoints<a class="headerlink" href="#endpoints" title="Link to this heading"></a></h3>
+<p><strong>Plan API (LLM-facing, detallada)</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/tools/catalog</span></code> → catálogo de herramientas y entidades (IDs canónicos).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/dataset/metadata</span></code> → <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">dataset_version,</span> <span class="pre">min_date,</span> <span class="pre">max_date,</span> <span class="pre">updated_at</span> <span class="pre">}</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/plan/execute</span></code> → ejecuta pipeline (plan) y devuelve <strong>Sobres</strong> (último o todos).</p></li>
+</ul>
+<p><strong>Job API (v0 simple / compatibilidad)</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/v1/job</span></code> → acepta <code class="docutils literal notranslate"><span class="pre">JobRequest</span></code> simple y devuelve <code class="docutils literal notranslate"><span class="pre">JobResult</span></code>.</p>
+<ul>
+<li><p>Internamente, el Expositor adapta <code class="docutils literal notranslate"><span class="pre">JobRequest</span></code> → <strong>Plan</strong> y <strong>Sobre</strong>, y lo traduce de vuelta a <code class="docutils literal notranslate"><span class="pre">JobResult</span></code>.</p></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<div><p><strong>Nota de coherencia</strong>: Ambos modos conviven. La <em>Plan API</em> es la referencia canónica; la <em>Job API</em> es un <em>adapter</em> para clientes simples o transitorios.</p>
+</div></blockquote>
+</section>
+<section id="catalogo-de-tools-resumen">
+<h3>4.2 Catálogo de Tools (resumen)<a class="headerlink" href="#catalogo-de-tools-resumen" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">enfoque_entidad&#64;1.0.0</span></code> — fija entidad (<code class="docutils literal notranslate"><span class="pre">entidad_id</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filtro_fecha&#64;1.0.0</span></code> — intervalo absoluto (<code class="docutils literal notranslate"><span class="pre">from</span></code>/<code class="docutils literal notranslate"><span class="pre">to</span></code> ISO día).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filtro_tipo&#64;1.0.0</span></code> — por tipo(s) de delito.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filtro_metodo&#64;1.0.0</span></code> — por método/violencia.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filtro_frecuencia&#64;1.0.0</span></code> — frecuencia mínima (<code class="docutils literal notranslate"><span class="pre">por</span></code>, <code class="docutils literal notranslate"><span class="pre">min_eventos</span></code>/<code class="docutils literal notranslate"><span class="pre">min_tasa</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rank_por_delito&#64;1.1.0</span></code> — ranking por delito y nivel (<code class="docutils literal notranslate"><span class="pre">hijos|actual</span></code>), <code class="docutils literal notranslate"><span class="pre">medida</span></code> = <code class="docutils literal notranslate"><span class="pre">conteo|tasa_per_100k</span></code>, <code class="docutils literal notranslate"><span class="pre">top_k</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">top_entidades_por_total&#64;1.0.0</span></code> — top por total.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">detectar_patrones&#64;1.0.0</span></code> — co-ocurrencias/tiempo/lugar con <code class="docutils literal notranslate"><span class="pre">score/support/lift</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">listar_evidencia&#64;1.0.0</span></code> — IDs/filas que sustentan conclusiones.</p></li>
+</ul>
+</section>
+<section id="plan-entrada-a-plan-execute">
+<h3>4.3 Plan (entrada a <code class="docutils literal notranslate"><span class="pre">/plan/execute</span></code>)<a class="headerlink" href="#plan-entrada-a-plan-execute" title="Link to this heading"></a></h3>
+<p><strong>Texto simple (aceptado por Intérprete):</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="mi">6</span><span class="p">,</span><span class="mi">9</span><span class="p">]</span>
+<span class="n">entidad_id</span><span class="p">:</span> <span class="n">GTO</span><span class="o">.</span><span class="n">MUN</span><span class="o">.</span><span class="n">LEON</span>
+<span class="n">delito</span><span class="p">:</span> <span class="n">homicidio_doloso</span>
+<span class="n">nivel</span><span class="p">:</span> <span class="n">hijos</span>
+<span class="n">medida</span><span class="p">:</span> <span class="n">tasa_per_100k</span>
+<span class="n">top_k</span><span class="p">:</span> <span class="mi">10</span>
+<span class="n">from</span><span class="p">:</span> <span class="mi">2025</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">15</span>
+<span class="n">to</span><span class="p">:</span>   <span class="mi">2025</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">13</span>
+</pre></div>
+</div>
+<p><strong>JSON normalizado:</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;plan&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;tool_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.1.0&quot;</span><span class="p">,</span>
+<span class="w">     </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;entidad_id&quot;</span><span class="p">:</span><span class="s2">&quot;GTO.MUN.LEON&quot;</span><span class="p">,</span><span class="nt">&quot;delito&quot;</span><span class="p">:</span><span class="s2">&quot;homicidio_doloso&quot;</span><span class="p">,</span><span class="nt">&quot;nivel&quot;</span><span class="p">:</span><span class="s2">&quot;hijos&quot;</span><span class="p">,</span>
+<span class="w">              </span><span class="nt">&quot;medida&quot;</span><span class="p">:</span><span class="s2">&quot;tasa_per_100k&quot;</span><span class="p">,</span><span class="nt">&quot;top_k&quot;</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="s2">&quot;2025-07-15&quot;</span><span class="p">,</span><span class="nt">&quot;to&quot;</span><span class="p">:</span><span class="s2">&quot;2025-08-13&quot;</span><span class="p">}},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;tool_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;meta&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;catalog_version&quot;</span><span class="p">:</span><span class="s2">&quot;2025.08.19&quot;</span><span class="p">,</span><span class="nt">&quot;dataset_version&quot;</span><span class="p">:</span><span class="s2">&quot;gx-2025.08.15&quot;</span><span class="p">,</span><span class="nt">&quot;strict_time&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="sobre-envelope-salida-estandar-de-tools">
+<h3>4.4 Sobre (Envelope) — salida estándar de tools<a class="headerlink" href="#sobre-envelope-salida-estandar-de-tools" title="Link to this heading"></a></h3>
+<p><strong>Éxito (extracto):</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ok&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;tool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rank_por_delito@1.1.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;headline&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Top homicidio_doloso (tasa_per_100k) — Hijos de GTO.MUN.LEON&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;highlights&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Top-1: GTO.MUN.LEON&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Ventana 2025-07-15..2025-08-13&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;inline&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;entidad_id&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;label&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;conteo&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;tasa_per_100k&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;float&quot;</span><span class="p">}</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;rows&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">&quot;GTO.MUN.LEON&quot;</span><span class="p">,</span><span class="s2">&quot;León&quot;</span><span class="p">,</span><span class="mi">132</span><span class="p">,</span><span class="mf">8.1</span><span class="p">]],</span>
+<span class="w">      </span><span class="nt">&quot;limit_notice&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;applied&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;max_rows&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;artifacts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;tables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;rank_full&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;artifact://tables/2025-08-19/rank_homicidio_leon.parquet&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;evidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="s2">&quot;incidents&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ids&quot;</span><span class="p">:[</span><span class="mi">120301</span><span class="p">,</span><span class="mi">120322</span><span class="p">,</span><span class="mi">120415</span><span class="p">]}],</span>
+<span class="w">  </span><span class="nt">&quot;meta&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;schema_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;tool_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.1.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;dataset_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gx-2025.08.15&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;anchor_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-08-13&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;date_range_effective&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="s2">&quot;2025-07-15&quot;</span><span class="p">,</span><span class="nt">&quot;to&quot;</span><span class="p">:</span><span class="s2">&quot;2025-08-13&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;range_adjusted&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;timing_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4120</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;query_hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:...&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Error (extracto):</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;error&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;tool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;filtro_fecha@1.0.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INVALID_DATE_RANGE&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;details&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;from &gt; to después de recorte a dataset_max_date&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;hints&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Asegure &#39;from&#39; &lt;= &#39;to&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Consulte /dataset/metadata para el watermark temporal&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;meta&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;schema_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="job-api-compat-contratos-y-adapter">
+<h3>4.5 Job API (compat) — contratos y <em>adapter</em><a class="headerlink" href="#job-api-compat-contratos-y-adapter" title="Link to this heading"></a></h3>
+<p><strong>JobRequest</strong> (entrada):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">intent</span></code>: <code class="docutils literal notranslate"><span class="pre">&quot;consulta&quot;</span> <span class="pre">|</span> <span class="pre">&quot;analisis&quot;</span> <span class="pre">|</span> <span class="pre">&quot;metricas&quot;</span> <span class="pre">|</span> <span class="pre">&quot;patrones&quot;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query</span></code>: opcional</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tools</span></code>: lista de <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">name,</span> <span class="pre">args</span> <span class="pre">}</span></code> (opcional)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params</span></code>: <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">municipio,</span> <span class="pre">fecha_inicio,</span> <span class="pre">fecha_fin,</span> <span class="pre">delito</span> <span class="pre">}</span></code> (v0)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: <code class="docutils literal notranslate"><span class="pre">&quot;json&quot;</span> <span class="pre">|</span> <span class="pre">&quot;markdown&quot;</span> <span class="pre">|</span> <span class="pre">&quot;tabular&quot;</span> <span class="pre">|</span> <span class="pre">&quot;grafico&quot;</span></code></p></li>
+</ul>
+<p><strong>JobResult</strong> (salida):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ok</span></code>: boolean</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">payload</span></code>: datos empaquetados (tablas, muestras, gráficos codificados)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code>: lista de mensajes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">provenance</span></code>: <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">dataset,</span> <span class="pre">dataset_version,</span> <span class="pre">data_available_until,</span> <span class="pre">filters_applied</span> <span class="pre">}</span></code></p></li>
+</ul>
+<p><strong>Reglas del <em>adapter</em></strong>:</p>
+<ul class="simple">
+<li><p>Traduce <code class="docutils literal notranslate"><span class="pre">municipio</span></code> → <code class="docutils literal notranslate"><span class="pre">entidad_id</span></code> (catálogo de entidades).</p></li>
+<li><p>Traduce <code class="docutils literal notranslate"><span class="pre">fecha_inicio|fecha_fin</span></code> → <code class="docutils literal notranslate"><span class="pre">from|to</span></code>.</p></li>
+<li><p>Aplica <em>Plan API</em> internamente y convierte el <strong>Sobre</strong> resultante en <code class="docutils literal notranslate"><span class="pre">JobResult</span></code>:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">status:&quot;ok&quot;</span></code> → <code class="docutils literal notranslate"><span class="pre">ok=true</span></code>, <code class="docutils literal notranslate"><span class="pre">payload</span></code> derivado de <code class="docutils literal notranslate"><span class="pre">data.inline/artifacts/summary</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">status:&quot;error&quot;</span></code> → <code class="docutils literal notranslate"><span class="pre">ok=false</span></code>, error mapeado a <code class="docutils literal notranslate"><span class="pre">warnings</span></code> (y HTTP 400/422 si aplica).</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data_available_until</span></code> = <code class="docutils literal notranslate"><span class="pre">max_date</span></code> del metadata.</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="reglas-temporales-anclaje-y-recorte">
+<h2>5) Reglas temporales (anclaje y recorte)<a class="headerlink" href="#reglas-temporales-anclaje-y-recorte" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Fuente única de tiempo: <code class="docutils literal notranslate"><span class="pre">max_date</span></code> del dataset (<code class="docutils literal notranslate"><span class="pre">/dataset/metadata</span></code>).</p></li>
+<li><p>Fechas <strong>relativas</strong> → se resuelven contra <code class="docutils literal notranslate"><span class="pre">max_date</span></code>.</p></li>
+<li><p>Tools <strong>solo</strong> aceptan <strong>fechas absolutas</strong> <code class="docutils literal notranslate"><span class="pre">from</span></code>/<code class="docutils literal notranslate"><span class="pre">to</span></code> (día ISO).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">strict_time=false</span></code> (por defecto): recorta a <code class="docutils literal notranslate"><span class="pre">[min_date,</span> <span class="pre">max_date]</span></code> y registra ajuste.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">strict_time=true</span></code>: rangos fuera → error inmediato.</p></li>
+<li><p>Toda respuesta incluye <code class="docutils literal notranslate"><span class="pre">date_range_effective</span></code> y si hubo <code class="docutils literal notranslate"><span class="pre">range_adjusted</span></code>.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="errores-y-validaciones">
+<h2>6) Errores y validaciones<a class="headerlink" href="#errores-y-validaciones" title="Link to this heading"></a></h2>
+<p><strong>Códigos críticos (abortan)</strong>: <code class="docutils literal notranslate"><span class="pre">INVALID_PAYLOAD</span></code>, <code class="docutils literal notranslate"><span class="pre">INVALID_FILTER</span></code>, <code class="docutils literal notranslate"><span class="pre">DATA_QUALITY_ISSUE</span></code>, <code class="docutils literal notranslate"><span class="pre">COMPUTE_ERROR</span></code>, <code class="docutils literal notranslate"><span class="pre">RESOURCE_LIMIT</span></code>.<br />
+<strong>No críticos</strong>: <code class="docutils literal notranslate"><span class="pre">EMPTY_RESULT</span></code> puede devolver <code class="docutils literal notranslate"><span class="pre">rows:[]</span></code> como resultado válido.<br />
+<strong>Formato único externo</strong>: siempre el <strong>Sobre de error</strong>.<br />
+<strong>Interno</strong>: excepciones del Celador (<code class="docutils literal notranslate"><span class="pre">ValidacionError</span></code>, <code class="docutils literal notranslate"><span class="pre">DatosFaltantesError</span></code>, <code class="docutils literal notranslate"><span class="pre">HerramientaError</span></code>, etc.) se <strong>mapean</strong> 1:1 a códigos del Sobre.</p>
+<p><strong>Tabla de mapeo (ejemplos):</strong></p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Excepción interna</p></th>
+<th class="head"><p>Código Sobre</p></th>
+<th class="head"><p>HTTP</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ValidacionError</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INVALID_PAYLOAD</span></code></p></td>
+<td><p>422</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DatosFaltantesError</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DATA_QUALITY_ISSUE</span></code></p></td>
+<td><p>409</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">HerramientaError</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">COMPUTE_ERROR</span></code></p></td>
+<td><p>500</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RangoFueraDeCorte</span></code> (derivada)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INVALID_DATE_RANGE</span></code></p></td>
+<td><p>422</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="observabilidad-auditoria-y-salud">
+<h2>7) Observabilidad, auditoría y salud<a class="headerlink" href="#observabilidad-auditoria-y-salud" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">job_id</span></code> por solicitud (trazabilidad punta a punta).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query_hash</span></code> (hash del plan normalizado + versión de catálogo) para reproducibilidad.</p></li>
+<li><p>Audit log: plan normalizado, latencias por paso, row counts, <code class="docutils literal notranslate"><span class="pre">dataset_version</span></code>, rangos efectivos, errores.</p></li>
+<li><p>Health: <code class="docutils literal notranslate"><span class="pre">/health/live</span></code>, <code class="docutils literal notranslate"><span class="pre">/health/ready</span></code>.</p></li>
+<li><p>Provenance <strong>obligatorio</strong> en toda respuesta (JobResult y/o Sobre).</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="conformidad-de-nombres-y-convenciones">
+<h2>8) Conformidad de nombres y convenciones<a class="headerlink" href="#conformidad-de-nombres-y-convenciones" title="Link to this heading"></a></h2>
+<p><strong>Clave canónica externa (Plan API):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">entidad_id</span></code>, <code class="docutils literal notranslate"><span class="pre">from</span></code>, <code class="docutils literal notranslate"><span class="pre">to</span></code>, <code class="docutils literal notranslate"><span class="pre">delito</span></code>, <code class="docutils literal notranslate"><span class="pre">nivel</span></code>, <code class="docutils literal notranslate"><span class="pre">medida</span></code>, <code class="docutils literal notranslate"><span class="pre">top_k</span></code>…</p></li>
+</ul>
+<p><strong>Compatibilidad (Job API):</strong></p>
+<ul class="simple">
+<li><p>Acepta <code class="docutils literal notranslate"><span class="pre">municipio</span></code>, <code class="docutils literal notranslate"><span class="pre">fecha_inicio</span></code>, <code class="docutils literal notranslate"><span class="pre">fecha_fin</span></code>, <code class="docutils literal notranslate"><span class="pre">delito</span></code> y los mapea a los canónicos.</p></li>
+</ul>
+<p><strong>Tabla de mapeo (parámetros):</strong></p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Job API (entrada)</p></th>
+<th class="head"><p>Plan API (interno)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">municipio</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">entidad_id</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fecha_inicio</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">from</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fecha_fin</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">to</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">delito</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">delito</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tabla de mapeo (dataset info):</strong></p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Campo canónico</p></th>
+<th class="head"><p>Alias de compatibilidad</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">min_date</span></code></p></td>
+<td><p><em>(sin alias)</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_date</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">data_available_until</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dataset_version</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dataset_version</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="datos-y-deposito">
+<h2>9) Datos y Depósito<a class="headerlink" href="#datos-y-deposito" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Parquet/DuckDB en <code class="docutils literal notranslate"><span class="pre">./data</span></code> (rápido, reproducible, sin servidor).</p></li>
+<li><p>Esquema mínimo: <code class="docutils literal notranslate"><span class="pre">fecha</span> <span class="pre">(YYYY-MM-DD)</span></code>, <code class="docutils literal notranslate"><span class="pre">municipio</span></code>/<code class="docutils literal notranslate"><span class="pre">entidad_id</span></code>, <code class="docutils literal notranslate"><span class="pre">delito</span></code>, <code class="docutils literal notranslate"><span class="pre">eventos:int</span></code>.</p></li>
+<li><p>Catálogos/particiones si aplica.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/dataset/metadata</span></code> es la <strong>fuente de verdad</strong>; <code class="docutils literal notranslate"><span class="pre">/dataset/info</span></code> puede exponerse como <strong>alias</strong> para compatibilidad (devuelve el superconjunto con ambos nombres: <code class="docutils literal notranslate"><span class="pre">max_date</span></code> y <code class="docutils literal notranslate"><span class="pre">data_available_until</span></code>).</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="pruebas-y-despliegue">
+<h2>10) Pruebas y despliegue<a class="headerlink" href="#pruebas-y-despliegue" title="Link to this heading"></a></h2>
+<p><strong>Unitarias</strong>: herramientas (funciones puras), validaciones del Celador, Consultor (mini-datasets).<br />
+<strong>Integración</strong>: ETL completo (CSV→Parquet), <code class="docutils literal notranslate"><span class="pre">/v1/job</span></code> y <code class="docutils literal notranslate"><span class="pre">/plan/execute</span></code> con fixtures.<br />
+<strong>Determinismo</strong>: inyectar <code class="docutils literal notranslate"><span class="pre">RelojFijo</span></code>.<br />
+<strong>Despliegue (desarrollo)</strong>: FastAPI + Uvicorn; <code class="docutils literal notranslate"><span class="pre">.env</span></code>/YAML para rutas/dataset.</p>
+</section>
+<hr class="docutils" />
+<section id="seguridad-v0-v1">
+<h2>11) Seguridad (v0 → v1)<a class="headerlink" href="#seguridad-v0-v1" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>v0: entorno de desarrollo.</p></li>
+<li><p>v1: token/bearer por endpoint; rate limits; sanitización de archivos; artefactos firmados/expiran si hay servidor de objetos; mTLS a futuro.</p></li>
+</ul>
+<hr class="docutils" />
+<section id="anexo-a-ejemplos-de-pipelines-informativos">
+<h3>Anexo A — Ejemplos de pipelines (informativos)<a class="headerlink" href="#anexo-a-ejemplos-de-pipelines-informativos" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Top homicidio 30 días anclados</strong>: <code class="docutils literal notranslate"><span class="pre">[enfoque_entidad]</span> <span class="pre">→</span> <span class="pre">[filtro_fecha]</span> <span class="pre">→</span> <span class="pre">[rank_por_delito]</span> <span class="pre">→</span> <span class="pre">[listar_evidencia]</span></code>.</p></li>
+<li><p><strong>Patrones de robos sin violencia</strong>: <code class="docutils literal notranslate"><span class="pre">[enfoque_entidad]</span> <span class="pre">→</span> <span class="pre">[filtro_tipo]</span> <span class="pre">→</span> <span class="pre">[filtro_metodo]</span> <span class="pre">→</span> <span class="pre">[detectar_patrones]</span></code>.</p></li>
+</ul>
+</section>
+<section id="anexo-b-secuencia-tipica-consulta-analitica">
+<h3>Anexo B — Secuencia típica (consulta/analítica)<a class="headerlink" href="#anexo-b-secuencia-tipica-consulta-analitica" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>1) LLM → POST /plan/execute (o /v1/job)
+2) Expositor → valida forma → Orquestador.ejecutar
+3) Celador.validaciones(req)
+4) Consultor obtiene DataFrame desde Depósito
+5) Orquestador aplica pipeline de herramientas
+6) (Opcional) análisis métricas/patrones
+7) Empaquetador → Sobre/JobResult
+8) Auditoría → job_id, query_hash, rangos efectivos
+9) Mensajero devuelve respuesta
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="anexo-c-arquitectura-de-tools-verificables-y-catalogo-versionado-v0-1">
+<h2>Anexo C — Arquitectura de Tools Verificables y Catálogo Versionado (v0.1)<a class="headerlink" href="#anexo-c-arquitectura-de-tools-verificables-y-catalogo-versionado-v0-1" title="Link to this heading"></a></h2>
+<p>Este anexo formaliza el modelo de herramientas de Casandra como contratos verificables de primera clase.
+Define cómo se describen, versionan, validan y componen las Tools, así como el funcionamiento del catálogo
+versionado utilizado por el Orquestador y el Celador antes de cualquier ejecución.</p>
+<p>Este anexo complementa el Documento Unificado de Arquitectura e Integración v0 y establece las bases
+para la evolución hacia v1 sin romper compatibilidad.</p>
+<p><strong>Propósito</strong>: formalizar las herramientas (Tools) como contratos verificables de primera clase, habilitando validación automática de planes, reproducibilidad fuerte y evolución controlada del sistema sin romper compatibilidad.</p>
+<p>Este anexo complementa el documento unificado de arquitectura de Casandra v0 y define las bases para la transición hacia v1.</p>
+</section>
+<hr class="docutils" />
+<section id="c-1-motivacion-de-diseno">
+<h2>C.1 Motivación de diseño<a class="headerlink" href="#c-1-motivacion-de-diseno" title="Link to this heading"></a></h2>
+<p>Casandra opera bajo el principio de <strong>razonamiento delegado</strong>:<br />
+el LLM propone planes, pero no accede directamente a los datos ni decide los límites operativos.<br />
+Estas decisiones se imponen mediante contratos, validaciones y catálogos versionados.</p>
+<p>Para sostener este principio a escala, las herramientas dejan de ser simples funciones y se convierten en <strong>artefactos contractuales verificables</strong>.</p>
+<p>Los objetivos de este diseño son:</p>
+<ul class="simple">
+<li><p>Detectar errores antes de ejecutar cómputos costosos.</p></li>
+<li><p>Garantizar reproducibilidad y auditabilidad de resultados.</p></li>
+<li><p>Permitir evolución del sistema sin romper planes existentes.</p></li>
+<li><p>Proveer reglas claras y explícitas tanto para humanos como para agentes LLM.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="c-2-toolspec-esquema-base-de-tool">
+<h2>C.2 ToolSpec — Esquema base de Tool<a class="headerlink" href="#c-2-toolspec-esquema-base-de-tool" title="Link to this heading"></a></h2>
+<p>Toda herramienta en Casandra se define mediante un <strong>ToolSpec</strong>, un contrato formal que describe su identidad, entrada, salida y restricciones.</p>
+<section id="c-2-1-estructura-general">
+<h3>C.2.1 Estructura general<a class="headerlink" href="#c-2-1-estructura-general" title="Link to this heading"></a></h3>
+<p>Cada ToolSpec incluye:</p>
+<ul class="simple">
+<li><p>Identidad de la herramienta.</p></li>
+<li><p>Declaración explícita de dependencias.</p></li>
+<li><p>Esquema estricto de argumentos.</p></li>
+<li><p>Contrato de salida sobre el Sobre (Envelope).</p></li>
+<li><p>Declaración de determinismo.</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="c-3-identidad-de-la-herramienta">
+<h2>C.3 Identidad de la herramienta<a class="headerlink" href="#c-3-identidad-de-la-herramienta" title="Link to this heading"></a></h2>
+<p>Cada ToolSpec debe definir:</p>
+<ul class="simple">
+<li><p><strong>tool_id</strong><br />
+Identificador numérico interno y estable.</p></li>
+<li><p><strong>name</strong><br />
+Nombre canónico de la herramienta (ej. <code class="docutils literal notranslate"><span class="pre">rank_por_delito</span></code>).</p></li>
+<li><p><strong>version</strong><br />
+Versión semántica (semver).</p></li>
+<li><p><strong>summary</strong><br />
+Descripción breve y precisa del propósito de la herramienta.</p></li>
+<li><p><strong>kind</strong><br />
+Categoría funcional (<code class="docutils literal notranslate"><span class="pre">filter</span></code>, <code class="docutils literal notranslate"><span class="pre">analysis</span></code>, <code class="docutils literal notranslate"><span class="pre">metricas</span></code>, <code class="docutils literal notranslate"><span class="pre">patrones</span></code>, etc.).</p></li>
+</ul>
+<p>La identidad completa de una herramienta está dada por <code class="docutils literal notranslate"><span class="pre">name&#64;version</span></code>.</p>
+</section>
+<hr class="docutils" />
+<section id="c-4-requisitos-declarativos-requires">
+<h2>C.4 Requisitos declarativos (<code class="docutils literal notranslate"><span class="pre">requires</span></code>)<a class="headerlink" href="#c-4-requisitos-declarativos-requires" title="Link to this heading"></a></h2>
+<p>Cada herramienta declara explícitamente sus dependencias lógicas:</p>
+<ul class="simple">
+<li><p><strong>dataset</strong>: requiere acceso al Depósito.</p></li>
+<li><p><strong>entity</strong>: requiere <code class="docutils literal notranslate"><span class="pre">entidad_id</span></code>.</p></li>
+<li><p><strong>date_range</strong>: requiere <code class="docutils literal notranslate"><span class="pre">from</span></code> y <code class="docutils literal notranslate"><span class="pre">to</span></code>.</p></li>
+<li><p><strong>evidence_capable</strong>: puede generar evidencia trazable.</p></li>
+</ul>
+<p>Estos requisitos permiten:</p>
+<ul class="simple">
+<li><p>Validar el orden lógico del pipeline.</p></li>
+<li><p>Detectar planes inválidos antes de ejecución.</p></li>
+<li><p>Automatizar reglas de composición entre herramientas.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="c-5-esquema-de-argumentos-args-schema">
+<h2>C.5 Esquema de argumentos (<code class="docutils literal notranslate"><span class="pre">args_schema</span></code>)<a class="headerlink" href="#c-5-esquema-de-argumentos-args-schema" title="Link to this heading"></a></h2>
+<p>Cada ToolSpec define un esquema estricto de entrada, basado en JSON Schema.</p>
+<p>Principios del esquema:</p>
+<ul class="simple">
+<li><p>Tipos explícitos.</p></li>
+<li><p>Campos obligatorios declarados.</p></li>
+<li><p>Enumeraciones cerradas cuando aplica.</p></li>
+<li><p>Rangos numéricos definidos.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">additionalProperties</span></code> deshabilitado por defecto.</p></li>
+</ul>
+<p>Esto elimina ambigüedad semántica y reduce errores del LLM a fallos estructurales corregibles.</p>
+</section>
+<hr class="docutils" />
+<section id="c-6-contrato-de-salida-output-contract">
+<h2>C.6 Contrato de salida (<code class="docutils literal notranslate"><span class="pre">output_contract</span></code>)<a class="headerlink" href="#c-6-contrato-de-salida-output-contract" title="Link to this heading"></a></h2>
+<p>El contrato de salida define qué bloques del Sobre garantiza la herramienta.</p>
+<p>Se declaran explícitamente:</p>
+<ul class="simple">
+<li><p>Versión del esquema del Sobre soportado.</p></li>
+<li><p>Presencia garantizada de <code class="docutils literal notranslate"><span class="pre">summary</span></code>, <code class="docutils literal notranslate"><span class="pre">data.inline</span></code>, etc.</p></li>
+<li><p>Bloques opcionales (<code class="docutils literal notranslate"><span class="pre">artifacts</span></code>, <code class="docutils literal notranslate"><span class="pre">evidence</span></code>).</p></li>
+<li><p>Límites de filas por defecto.</p></li>
+</ul>
+<p>Ninguna herramienta puede violar el esquema del Sobre definido por la arquitectura central.</p>
+</section>
+<hr class="docutils" />
+<section id="c-7-determinismo">
+<h2>C.7 Determinismo<a class="headerlink" href="#c-7-determinismo" title="Link to this heading"></a></h2>
+<p>Cada herramienta declara su nivel de determinismo.</p>
+<p>Una herramienta es determinista si, dados:</p>
+<ul class="simple">
+<li><p>el mismo <code class="docutils literal notranslate"><span class="pre">dataset_version</span></code></p></li>
+<li><p>los mismos argumentos normalizados</p></li>
+</ul>
+<p>produce siempre el mismo resultado.</p>
+<p>Esta declaración habilita reproducibilidad, auditoría y comparación entre ejecuciones.</p>
+</section>
+<hr class="docutils" />
+<section id="c-8-validacion-automatica-de-planes">
+<h2>C.8 Validación automática de planes<a class="headerlink" href="#c-8-validacion-automatica-de-planes" title="Link to this heading"></a></h2>
+<p>Antes de ejecutar cualquier pipeline, Casandra realiza validación automática en dos fases.</p>
+<section id="c-8-1-validacion-estatica">
+<h3>C.8.1 Validación estática<a class="headerlink" href="#c-8-1-validacion-estatica" title="Link to this heading"></a></h3>
+<p>No accede a datos.</p>
+<p>Incluye:</p>
+<ul class="simple">
+<li><p>Verificación de existencia de tool y versión.</p></li>
+<li><p>Validación de argumentos contra <code class="docutils literal notranslate"><span class="pre">args_schema</span></code>.</p></li>
+<li><p>Compatibilidad con <code class="docutils literal notranslate"><span class="pre">catalog_version</span></code>.</p></li>
+<li><p>Orden lógico del pipeline según <code class="docutils literal notranslate"><span class="pre">requires</span></code>.</p></li>
+<li><p>Normalización canónica del plan para cálculo de <code class="docutils literal notranslate"><span class="pre">query_hash</span></code>.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="c-8-2-validacion-contextual">
+<h3>C.8.2 Validación contextual<a class="headerlink" href="#c-8-2-validacion-contextual" title="Link to this heading"></a></h3>
+<p>Accede únicamente a metadata.</p>
+<p>Incluye:</p>
+<ul class="simple">
+<li><p>Resolución de fechas contra <code class="docutils literal notranslate"><span class="pre">min_date</span></code> y <code class="docutils literal notranslate"><span class="pre">max_date</span></code>.</p></li>
+<li><p>Aplicación de reglas de <code class="docutils literal notranslate"><span class="pre">strict_time</span></code>.</p></li>
+<li><p>Validación de entidades y taxonomías.</p></li>
+<li><p>Estimación básica de consumo de recursos.</p></li>
+</ul>
+<p>Si cualquier validación falla, se retorna un <strong>Sobre de error</strong> y el pipeline no se ejecuta.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="c-9-catalogo-versionado-verificable-catalogspec">
+<h2>C.9 Catálogo Versionado Verificable (CatalogSpec)<a class="headerlink" href="#c-9-catalogo-versionado-verificable-catalogspec" title="Link to this heading"></a></h2>
+<p>El catálogo de herramientas es un artefacto inmutable y versionado.</p>
+<p>Contiene:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">catalog_version</span></code></p></li>
+<li><p>versión del esquema</p></li>
+<li><p>timestamp de generación</p></li>
+<li><p>checksum criptográfico</p></li>
+<li><p>lista completa de ToolSpec</p></li>
+<li><p>catálogos de entidades y taxonomías asociadas</p></li>
+</ul>
+<p>Cualquier modificación genera un nuevo catálogo con checksum distinto.</p>
+</section>
+<hr class="docutils" />
+<section id="c-10-reglas-de-versionado-y-compatibilidad">
+<h2>C.10 Reglas de versionado y compatibilidad<a class="headerlink" href="#c-10-reglas-de-versionado-y-compatibilidad" title="Link to this heading"></a></h2>
+<p>Casandra adopta versionado semántico estricto:</p>
+<ul class="simple">
+<li><p><strong>PATCH</strong>: correcciones internas sin cambios contractuales.</p></li>
+<li><p><strong>MINOR</strong>: extensión compatible (campos opcionales).</p></li>
+<li><p><strong>MAJOR</strong>: cambios incompatibles.</p></li>
+</ul>
+<p>Las versiones activas no se eliminan sin transición explícita.</p>
+</section>
+<hr class="docutils" />
+<section id="c-11-beneficios-arquitectonicos">
+<h2>C.11 Beneficios arquitectónicos<a class="headerlink" href="#c-11-beneficios-arquitectonicos" title="Link to this heading"></a></h2>
+<p>Este diseño aporta:</p>
+<ul class="simple">
+<li><p>Validación determinista del razonamiento.</p></li>
+<li><p>Errores tempranos, explícitos y auditables.</p></li>
+<li><p>Evolución segura del sistema.</p></li>
+<li><p>Base sólida para control de acceso, rate limiting y seguridad en v1.</p></li>
+</ul>
+<p>Casandra no confía en que el LLM razone bien.<br />
+Casandra <strong>verifica</strong> que razone dentro de lo permitido.</p>
+</section>
+<hr class="docutils" />
+<section id="limitaciones-de-v0-y-extensiones-propuestas-hacia-v1">
+<h2>13) Limitaciones de v0 y Extensiones Propuestas (hacia v1)<a class="headerlink" href="#limitaciones-de-v0-y-extensiones-propuestas-hacia-v1" title="Link to this heading"></a></h2>
+<p>Del análisis de casos de uso más complejos (ej. ranking de municipios por anomalías + gravedad), se identifican huecos claros:</p>
+<section id="nuevos-tools-requeridos">
+<h3>13.1 Nuevos Tools requeridos<a class="headerlink" href="#nuevos-tools-requeridos" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>detectar_anomalias&#64;1.0.0</strong></p>
+<ul>
+<li><p>Args sugeridos: <code class="docutils literal notranslate"><span class="pre">entidad_id</span></code>, <code class="docutils literal notranslate"><span class="pre">nivel</span></code>, <code class="docutils literal notranslate"><span class="pre">from</span></code>, <code class="docutils literal notranslate"><span class="pre">to</span></code>, <code class="docutils literal notranslate"><span class="pre">z_threshold</span></code>, <code class="docutils literal notranslate"><span class="pre">window</span></code>.</p></li>
+<li><p>Output: lista de anomalías detectadas por entidad con <code class="docutils literal notranslate"><span class="pre">z_score</span></code>, <code class="docutils literal notranslate"><span class="pre">event_ids</span></code>, <code class="docutils literal notranslate"><span class="pre">severity</span></code> (si aplica).</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="extension-de-schemas-de-incidentes-y-sobre">
+<h3>13.2 Extensión de schemas de incidentes y Sobre<a class="headerlink" href="#extension-de-schemas-de-incidentes-y-sobre" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Incluir campo <code class="docutils literal notranslate"><span class="pre">severity</span></code> (0–1 o 0–100 normalizado) en incidentes/artifacts cuando se trate de patrones o anomalías.</p></li>
+<li><p>Añadir bloque <code class="docutils literal notranslate"><span class="pre">metrics</span></code> en el Sobre para exponer métricas agregadas estándar (ejemplo: <code class="docutils literal notranslate"><span class="pre">total_anomalias</span></code>, <code class="docutils literal notranslate"><span class="pre">gravedad_promedio</span></code>).</p></li>
+</ul>
+</section>
+<section id="reduccion-y-agregacion">
+<h3>13.3 Reducción y agregación<a class="headerlink" href="#reduccion-y-agregacion" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Extender <code class="docutils literal notranslate"><span class="pre">top_entidades_por_total</span></code> o crear un nuevo tool <code class="docutils literal notranslate"><span class="pre">agrupar_por_entidad&#64;1.0.0</span></code> que acepte:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">aggregate_by</span></code>: métrica a usar (<code class="docutils literal notranslate"><span class="pre">total_anomalias</span></code>, <code class="docutils literal notranslate"><span class="pre">gravedad_promedio</span></code>, etc.).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metrics</span></code>: lista de métricas adicionales a devolver.</p></li>
+</ul>
+</li>
+<li><p>Esto permite hacer ranking no solo por conteo de incidentes, sino por resultados de análisis.</p></li>
+</ul>
+</section>
+<section id="contratos-de-salida-enriquecidos">
+<h3>13.4 Contratos de salida enriquecidos<a class="headerlink" href="#contratos-de-salida-enriquecidos" title="Link to this heading"></a></h3>
+<p>Ejemplo de bloque extendido del Sobre (extracto):</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;total_anomalias&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">48</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;gravedad_promedio&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.62</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../api/casandra.Main.html" class="btn btn-neutral float-left" title="casandra.Main module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
