@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/_static/CasandraLogo.png" alt="Casandra Logo" width="200"/>
+  <img src="Casandra\casandra\docs\_static\CasandraLogo.png" alt="Casandra Logo" width="200"/>
   <h1><em><strong>Casandra</strong></em></h1>
   <h3><i>Los datos hablan por sí solos</i></h3>
   
