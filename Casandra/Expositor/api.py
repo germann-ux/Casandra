@@ -1,31 +1,57 @@
-# Expositor/api.py
+# casandra/expositor/api.py
+from __future__ import annotations
+
+from datetime import date
+
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
-# si usas mayúsculas: from Casandra.Expositor.middleware import JobIdMiddleware
+
+from .error_handlers import register_error_handlers
 from .middleware import JobIdMiddleware
 
-# si usas mayúsculas: from Casandra.Celador.guardia import celar
 from ..Celador.guardia import celar
-from ..Celador.validaciones import validar_rango, requeridos
-from datetime import date
+from ..Celador.validaciones import (
+    requeridos,
+    validar_rango,
+    entidad_id as validar_entidad_id,
+)
+from ..dominio.nombres import tool_name
+
 
 app = FastAPI()
 app.add_middleware(JobIdMiddleware)
+register_error_handlers(app)
 
 
-@celar("demo_rank@1.0.0", schema_version="1.0.0", tool_version="1.0.0")
+# --- Canonical tool identity (single source of truth) ---
+TOOL_ID = "demo_rank"
+TOOL_VER = "1.0.0"
+DEMO_RANK_TOOL = tool_name(TOOL_ID, TOOL_VER)
+
+
+# Tool (sin FastAPI adentro)
+@celar(DEMO_RANK_TOOL, schema_version="1.0.0", tool_version=TOOL_VER)
 def demo_rank(
-    *, entidad_id: str, from_: str, to_: str, strict_time: bool = False
+    *, entidad_id: str, from_: date, to_: date, strict_time: bool = False
 ) -> dict:
-    requeridos(locals(), ["entidad_id", "from_", "to_"])
-    # ancla temporal ficticia v0; conectaremos a /dataset/metadata luego
+    requeridos(
+        {"entidad_id": entidad_id, "from": from_, "to": to_},
+        ["entidad_id", "from", "to"],
+    )
+    entidad_id = validar_entidad_id(entidad_id)
+
+    # Ancla temporal ficticia v0; luego vendrá de /dataset/metadata
     min_d, max_d = date(2024, 1, 1), date(2025, 8, 13)
+
     ef1, ef2, adjusted = validar_rango(from_, to_, min_d, max_d, strict_time)
-    # devolver un Sobre OK mínimo
+
     return {
         "status": "ok",
-        "tool": "demo_rank@1.0.0",
-        "summary": {"headline": f"Ventana efectiva {ef1}..{ef2}", "highlights": []},
+        "tool": DEMO_RANK_TOOL,
+        "summary": {
+            "headline": f"Ventana efectiva {ef1}..{ef2}",
+            "highlights": [],
+        },
         "data": {
             "inline": {
                 "columns": [],
@@ -35,8 +61,6 @@ def demo_rank(
         },
         "evidence": [],
         "meta": {
-            "schema_version": "1.0.0",
-            "tool_version": "1.0.0",
             "date_range_effective": {"from": str(ef1), "to": str(ef2)},
             "range_adjusted": adjusted,
         },
@@ -46,8 +70,8 @@ def demo_rank(
 @app.get("/demo/rank")
 def demo_rank_http(
     entidad_id: str = Query(...),
-    from_: str = Query(..., alias="from"),
-    to_: str = Query(..., alias="to"),
+    from_: date = Query(..., alias="from"),
+    to_: date = Query(..., alias="to"),
     strict_time: bool = Query(False),
 ):
     sobre, http = demo_rank(
